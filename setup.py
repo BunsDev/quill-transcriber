@@ -14,4 +14,5 @@ setup(
             "quill=main:cli",
         ],
     },
+    python_requires=">=3.10",
 )
