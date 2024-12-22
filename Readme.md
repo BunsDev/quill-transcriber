@@ -2,7 +2,9 @@
 
 ![Quill Logo](static/logo.jpg)
 
-A command-line tool for transcribing audio using Faster Whisper.
+A command-line tool for transcribing audio files, YouTube videos, and podcasts using Faster Whisper.
+
+![Demo](static/demo.gif)
 
 ## Prerequisites
 
