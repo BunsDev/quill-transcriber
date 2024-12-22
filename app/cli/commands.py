@@ -13,12 +13,30 @@ from .utils import is_youtube_url, download_youtube_audio, download_file, is_url
     help="Model size to use (tiny, base, small, medium, large)",
     show_default=True,
 )
-def transcribe(input_source, output_file="transcription.txt", model="medium"):
+@click.option(
+    "--device",
+    default="auto",
+    type=click.Choice(["auto", "cpu", "cuda"]),
+    help="Device to use for inference",
+    show_default=True,
+)
+@click.option(
+    "--language",
+    default=None,
+    help="Language code for transcription (e.g., en, fr, de). Default: auto-detect",
+)
+def transcribe(
+    input_source,
+    output_file,
+    model,
+    device,
+    language,
+):
     """
     Transcribe audio from a file or URL to text.
 
     INPUT_SOURCE: Path to local audio file or URL to audio file (including YouTube URLs)
-    
+
     OUTPUT_FILE: Path where the transcription will be saved
     """
     temp_file = None
@@ -35,16 +53,22 @@ def transcribe(input_source, output_file="transcription.txt", model="medium"):
 
         # Initialize the model
         click.echo("Loading model...")
-        whisper_model = WhisperModel(model, device="auto", compute_type="auto")
+        whisper_model = WhisperModel(
+            model, device=device, compute_type="auto"
+        )
 
         # Perform transcription
         click.echo("Transcribing audio...")
-        segments, info = whisper_model.transcribe(input_source, beam_size=5)
+        segments, info = whisper_model.transcribe(input_source, beam_size=5, language=language)
+
+        # Print duration
+        click.echo(f"Duration: {info.duration:.2f} seconds")
 
         # Print detection info
-        click.echo(
-            f"Detected language '{info.language}' with probability {info.language_probability}"
-        )
+        if language is None:
+            click.echo( 
+                f"Detected language '{info.language}' with probability {info.language_probability}"
+            )
 
         # Build transcription
         transcription = ""
@@ -63,10 +87,10 @@ def transcribe(input_source, output_file="transcription.txt", model="medium"):
         if temp_file and os.path.exists(temp_file):
             os.remove(temp_file)
         raise click.Abort()
-        
+
     except Exception as e:
         raise click.ClickException(str(e))
-        
+
     finally:
         # Cleanup downloaded files
         if temp_file:
