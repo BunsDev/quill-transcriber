@@ -1,7 +1,7 @@
 import click
 from faster_whisper import WhisperModel
 import os
-from .utils import is_youtube_url, download_youtube_audio, download_file, is_url
+from app.cli.utils import is_youtube_url, download_youtube_audio, download_file, is_url
 
 
 @click.command()
@@ -18,7 +18,7 @@ def transcribe(input_source, output_file="transcription.txt", model="medium"):
     Transcribe audio from a file or URL to text.
 
     INPUT_SOURCE: Path to local audio file or URL to audio file (including YouTube URLs)
-    
+
     OUTPUT_FILE: Path where the transcription will be saved
     """
     temp_file = None
@@ -63,10 +63,10 @@ def transcribe(input_source, output_file="transcription.txt", model="medium"):
         if temp_file and os.path.exists(temp_file):
             os.remove(temp_file)
         raise click.Abort()
-        
+
     except Exception as e:
         raise click.ClickException(str(e))
-        
+
     finally:
         # Cleanup downloaded files
         if temp_file:
