@@ -1,6 +1,6 @@
 # Quill
 
-![Quill Logo](static/logo.jpg)
+![Quill Logo](static/logo.jpeg)
 
 A command-line tool for transcribing audio files, YouTube videos, and podcasts using Faster Whisper.
 
