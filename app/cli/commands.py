@@ -58,18 +58,19 @@ def transcribe(input_source, output_file="transcription.txt", model="medium"):
 
         click.echo(f"\nTranscription saved to: {output_file}")
 
+    except KeyboardInterrupt:
+        click.echo("\nTranscription cancelled by user. Cleaning up...")
+        if temp_file and os.path.exists(temp_file):
+            os.remove(temp_file)
+        raise click.Abort()
+        
+    except Exception as e:
+        raise click.ClickException(str(e))
+        
+    finally:
         # Cleanup downloaded files
         if temp_file:
             if os.path.exists(temp_file):
                 os.remove(temp_file)
             if os.path.exists(f"{temp_file}.wav"):
                 os.remove(f"{temp_file}.wav")
-
-    except Exception as e:
-        # Cleanup on error
-        if temp_file:
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
-            if os.path.exists(f"{temp_file}.wav"):
-                os.remove(f"{temp_file}.wav")
-        raise click.ClickException(str(e))
