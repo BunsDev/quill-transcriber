@@ -25,12 +25,19 @@ from app.cli.utils import is_youtube_url, download_youtube_audio, download_file,
     default=None,
     help="Language code for transcription (e.g., en, fr, de). Default: auto-detect",
 )
+@click.option(
+    "--timestamps",
+    "-t",
+    is_flag=True,
+    help="Include timestamps in the transcription output",
+)
 def transcribe(
     input_source,
     output_file,
     model,
     device,
     language,
+    timestamps,
 ):
     """
     Transcribe audio from a file or URL to text.
@@ -72,12 +79,30 @@ def transcribe(
 
         # Build transcription
         transcription = ""
-        for segment in segments:
-            click.echo(f"[{segment.start:.2f}s -> {segment.end:.2f}s] {segment.text}")
-            transcription += segment.text
+        grouped_transcription = []
+        current_group = ""
+        current_start = None
 
+        for segment in segments:
+            if timestamps:
+                if current_start is None:
+                    current_start = segment.start
+                current_group += f"{segment.text} "
+            else:
+                current_group += f"{segment.text} "
+            
+            # Simple grouping: end the group after each segment
+            if timestamps:
+                grouped_transcription.append(f"[{current_start:.2f}s -> {segment.end:.2f}s] {current_group.strip()}")
+                click.echo(f"[{current_start:.2f}s -> {segment.end:.2f}s] {current_group.strip()}")
+                transcription += f"[{current_start:.2f}s -> {segment.end:.2f}s] {current_group.strip()}\n"
+                current_group = ""
+                current_start = None
+            else:
+                transcription += segment.text + " "
+        
         # Write to output file
-        with open(output_file, "w", encoding="utf-8") as f:
+        with open(output_file, "w", encoding="utf-8") as f:  # Ensure writing formatted transcription
             f.write(transcription)
 
         click.echo(f"\nTranscription saved to: {output_file}")
