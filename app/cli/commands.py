@@ -9,12 +9,14 @@ from app.cli.utils import is_youtube_url, download_youtube_audio, download_file,
 @click.argument("output_file", default="transcription.txt")
 @click.option(
     "--model",
+    "-m",
     default="medium",
     help="Model size to use (tiny, base, small, medium, large)",
     show_default=True,
 )
 @click.option(
     "--device",
+    "-d",
     default="auto",
     type=click.Choice(["auto", "cpu", "cuda"]),
     help="Device to use for inference",
@@ -22,6 +24,7 @@ from app.cli.utils import is_youtube_url, download_youtube_audio, download_file,
 )
 @click.option(
     "--language",
+    "-l",
     default=None,
     help="Language code for transcription (e.g., en, fr, de). Default: auto-detect",
 )
