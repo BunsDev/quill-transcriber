@@ -34,6 +34,7 @@ Options:
 - `--model`: Model size to use (tiny, base, small, medium, large). Default: medium
 - `--device`: Device to use for inference (cpu, cuda). Default: cpu
 - `--language`: Language code for transcription (e.g., en, fr, de). Default: auto-detect
+- `--timestamps, -t`: Include timestamps in the transcription output
 
 ## Supported Input Sources
 
