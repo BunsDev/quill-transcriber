@@ -2,11 +2,19 @@ import click
 from faster_whisper import WhisperModel
 import os
 from app.cli.utils import is_youtube_url, download_youtube_audio, download_file, is_url
+from pathlib import Path
+
+
+def sanitize_filename(filename):
+    """Sanitize a string to be used as a filename."""
+    # Replace spaces with underscores and remove/replace invalid characters
+    filename = "".join(c for c in filename if c.isalnum() or c in (" ", "-", "_"))
+    return filename.strip()
 
 
 @click.command()
 @click.argument("input_source")
-@click.argument("output_file", default="transcription.txt")
+@click.argument("output_file", required=False)
 @click.option(
     "--model",
     "-m",
@@ -56,27 +64,41 @@ def transcribe(
             if is_youtube_url(input_source):
                 click.echo("Detected YouTube URL. Downloading audio...")
                 temp_file = "temp_audio_file"
-                input_source = download_youtube_audio(input_source, temp_file)
+                input_source, video_title = download_youtube_audio(
+                    input_source, temp_file
+                )
+                if output_file is None:
+                    # Use video title for output file, sanitize it for filesystem
+                    safe_title = sanitize_filename(video_title)
+                    output_file = f"{safe_title}.txt"
             else:
                 temp_file = "temp_audio_file"
                 input_source = download_file(input_source, temp_file)
+                if output_file is None:
+                    # Extract filename from URL
+                    output_file = Path(input_source).stem + ".txt"
+
+        # If output_file is still None and it's a local file
+        if output_file is None:
+            # Use the input filename but change extension to .txt
+            output_file = Path(input_source).stem + ".txt"
 
         # Initialize the model
         click.echo("Loading model...")
-        whisper_model = WhisperModel(
-            model, device=device, compute_type="auto"
-        )
+        whisper_model = WhisperModel(model, device=device, compute_type="auto")
 
         # Perform transcription
         click.echo("Transcribing audio...")
-        segments, info = whisper_model.transcribe(input_source, beam_size=5, language=language)
+        segments, info = whisper_model.transcribe(
+            input_source, beam_size=5, language=language
+        )
 
         # Print duration
         click.echo(f"Duration: {info.duration:.2f} seconds")
 
         # Print detection info
         if language is None:
-            click.echo( 
+            click.echo(
                 f"Detected language '{info.language}' with probability {info.language_probability}"
             )
 
@@ -86,26 +108,31 @@ def transcribe(
         current_group = ""
         current_start = None
 
+        click.echo("\nTranscription:")
         for segment in segments:
             if timestamps:
                 if current_start is None:
                     current_start = segment.start
                 current_group += f"{segment.text} "
-            else:
-                current_group += f"{segment.text} "
-            
-            # Simple grouping: end the group after each segment
-            if timestamps:
-                grouped_transcription.append(f"[{current_start:.2f}s -> {segment.end:.2f}s] {current_group.strip()}")
-                click.echo(f"[{current_start:.2f}s -> {segment.end:.2f}s] {current_group.strip()}")
-                transcription += f"[{current_start:.2f}s -> {segment.end:.2f}s] {current_group.strip()}\n"
+                
+                # Output and store the current segment
+                segment_text = f"[{current_start:.2f}s -> {segment.end:.2f}s] {current_group.strip()}"
+                click.echo(segment_text)
+                grouped_transcription.append(segment_text)
+                transcription += segment_text + "\n"
+                
                 current_group = ""
                 current_start = None
             else:
+                # Output and store the current segment
+                click.echo(segment.text)
+                current_group += f"{segment.text} "
                 transcription += segment.text + " "
-        
+
         # Write to output file
-        with open(output_file, "w", encoding="utf-8") as f:  # Ensure writing formatted transcription
+        with open(
+            output_file, "w", encoding="utf-8"
+        ) as f:  # Ensure writing formatted transcription
             f.write(transcription)
 
         click.echo(f"\nTranscription saved to: {output_file}")
